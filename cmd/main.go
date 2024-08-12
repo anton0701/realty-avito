@@ -3,9 +3,12 @@ package main
 import (
 	"os"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"golang.org/x/exp/slog"
 
 	"realty-avito/internal/config"
+	mwLogger "realty-avito/internal/http-server/middleware/logger"
 )
 
 const (
@@ -26,9 +29,12 @@ func main() {
 		slog.String("env", cfg.Env),
 	)
 
-	// TODO: init storage
+	// TODO: init storage postgres
 
 	// TODO: init router
+	router := chi.NewRouter()
+	router.Use(middleware.RequestID)
+	router.Use(mwLogger.New(log))
 
 	// TODO: run server
 
