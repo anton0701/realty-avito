@@ -1,9 +1,12 @@
 -- +goose Up
--- +goose StatementBegin
-SELECT 'up SQL query';
--- +goose StatementEnd
+CREATE TABLE houses (
+    id SERIAL PRIMARY KEY,
+    address VARCHAR(255) NOT NULL,
+    year INTEGER NOT NULL,
+    developer VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT NULL
+);
 
 -- +goose Down
--- +goose StatementBegin
-SELECT 'down SQL query';
--- +goose StatementEnd
+DROP TABLE IF EXISTS houses;
