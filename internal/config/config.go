@@ -1,6 +1,8 @@
 package config
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -8,11 +10,10 @@ import (
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
-// TODO: разобраться с конфигом Postgres (и убрать storagePath)
-
 type Config struct {
-	Env         string `yaml:"env" env:"ENV" env-default:"local" env-required:"true"`
-	StoragePath string `yaml:"storage_path" env-required:"true"`
+	Env        string `yaml:"env" env:"ENV" env-default:"local" env-required:"true"`
+	HTTPServer `yaml:"http_server"`
+	Postgres   PostgresConfig `yaml:"postgres"`
 }
 
 type HTTPServer struct {
@@ -23,22 +24,33 @@ type HTTPServer struct {
 	IdleTimeout       time.Duration `yaml:"idle_timeout" env-default:"30s"`
 }
 
-func MustLoad() *Config {
-	configPath := os.Getenv("CONFIG_PATH")
-	if configPath == "" {
-		log.Fatal("CONFIG_PATH is not set")
-	}
+type PostgresConfig struct {
+	DBName   string `yaml:"db_name" env:"PG_DATABASE_NAME" env-required:"true"`
+	User     string `yaml:"user" env:"PG_USER" env-required:"true"`
+	Password string `yaml:"password" env:"PG_PASSWORD" env-required:"true"`
+	Port     string `yaml:"port" env:"PG_PORT" env-required:"true"`
+	Host     string `yaml:"host" env:"PG_HOST" env-required:"true" env-default:"localhost"`
+}
 
-	// check if file exists
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		log.Fatalf("config file does not exist: %s", configPath)
+func MustLoad() *Config {
+	env := flag.String("env", "local", "which config to use: local, prod, dev")
+	flag.Parse()
+
+	configFilePath := fmt.Sprintf("./config/%s.yaml", *env)
+
+	if _, err := os.Stat(configFilePath); os.IsNotExist(err) {
+		log.Fatalf("config file does not exist: %s", configFilePath)
 	}
 
 	var cfg Config
 
-	if err := cleanenv.ReadConfig(configPath, &cfg); err != nil {
+	log.Printf("Reading config from: %s", configFilePath)
+
+	if err := cleanenv.ReadConfig(configFilePath, &cfg); err != nil {
 		log.Fatalf("cannot read config: %s", err)
 	}
+
+	log.Printf("Config loaded: %+v\n", cfg)
 
 	return &cfg
 }
