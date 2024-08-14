@@ -3,18 +3,17 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"os"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"golang.org/x/exp/slog"
+	"net/http"
+	"os"
+	myMiddleware "realty-avito/internal/http-server/middleware"
 
 	"realty-avito/internal/config"
 	"realty-avito/internal/http-server/handlers/dummyLogin"
 	"realty-avito/internal/http-server/handlers/house"
-	myMiddleware "realty-avito/internal/http-server/middleware"
 	mwLogger "realty-avito/internal/http-server/middleware/logger"
 	"realty-avito/internal/lib/logger/handlers/slogpretty"
 )
@@ -28,10 +27,10 @@ const (
 func main() {
 	ctx := context.Background()
 
-	// TODO: init config: cleanenv
+	// init config
 	cfg := config.MustLoad()
 
-	// TODO: init logger: slog
+	// init logger: slog
 	log := setupLogger(cfg.Env)
 
 	log.Info(
@@ -39,7 +38,7 @@ func main() {
 		slog.String("env", cfg.Env),
 	)
 
-	// TODO: init storage postgres
+	// init storage postgres
 	pool, err := initPostgres(ctx, cfg.Postgres)
 	if err != nil {
 		log.Error("failed to initialize postgres", slog.String("error", err.Error()))
@@ -49,32 +48,22 @@ func main() {
 
 	// TODO: создать flatsRepo + housesRepo + возможно moderatedFlatsRepo
 
-	// TODO: init router
+	// init router
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
 	router.Use(mwLogger.New(log))
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
 
-	//router.Get("/dummyLogin", dummyLogin.DummyLogin)
 	router.Get("/dummyLogin", dummyLogin.New(log))
-	// TODO: продолжить завтра
-	//router.Get("/house/{id}", house.New(log, flatsRepository))
-	//router.Use(myMiddleware.JWTMiddleware())
 
-	router.With(myMiddleware.JWTMiddleware()).Get("/house/{id}", func(w http.ResponseWriter, r *http.Request) {
-		userType := r.Context().Value("user_type").(string)
-
-		log.Info("user_type", slog.String(userType, userType))
-
-		if userType == "moderator" {
-			house.GetModeratorHouseHandler()(w, r)
-		} else if userType == "client" {
-			house.GetClientHouseHandler()(w, r)
-		}
+	router.Route("/house/{id}", func(r chi.Router) {
+		r.Use(myMiddleware.JWTMiddleware())
+		//r.Use(myMiddleware.JWTModeratorOnlyMiddleware())
+		r.Get("/", house.New(log))
 	})
 
-	// TODO: run server
+	// Run server
 	srv := &http.Server{
 		Addr:         cfg.HTTPServer.Address,
 		Handler:      router,

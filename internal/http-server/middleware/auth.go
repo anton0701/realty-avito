@@ -11,7 +11,6 @@ import (
 
 // TODO: вынести строки в константы
 // TODO: подумать над UserType
-
 var jwtKey = []byte("jwt_most_secret_key")
 
 type Claims struct {
@@ -29,38 +28,70 @@ func GenerateJWT(userType string) (string, error) {
 	return token.SignedString(jwtKey)
 }
 
-func JWTMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tokenString := r.Header.Get("Authorization")
-		if tokenString == "" {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
+// TODO: добавить каст к типу UserType, чтобы не получить проблем из-за опечаток
+func JWTMiddleware() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			tokenString := r.Header.Get("Authorization")
 
-		claims := &Claims{}
-		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-			return jwtKey, nil
+			if len(tokenString) > 7 { // len("Bearer ") == 7
+				tokenString = tokenString[7:]
+			}
+
+			if tokenString == "" {
+				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+				return
+			}
+
+			claims := &Claims{}
+			token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+				return jwtKey, nil
+			})
+
+			if err != nil || !token.Valid {
+				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+				return
+			}
+
+			ctx := context.WithValue(r.Context(), "user_type", claims.UserType)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
-
-		if err != nil || !token.Valid {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		ctx := context.WithValue(r.Context(), "user_type", claims.UserType)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+	}
 }
 
-func RequireModerator(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userType := r.Context().Value("user_type").(string)
-		if userType != "moderator" {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
+// TODO: добавить каст к типу UserType, чтобы не получить проблем из-за опечаток
+func JWTModeratorOnlyMiddleware() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			tokenString := r.Header.Get("Authorization")
+			if len(tokenString) > 7 { // "Bearer " == 7
+				tokenString = tokenString[7:]
+			}
+
+			if tokenString == "" {
+				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+				return
+			}
+
+			claims := &Claims{}
+			token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+				return jwtKey, nil
+			})
+
+			if err != nil || !token.Valid {
+				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+				return
+			}
+
+			if claims.UserType != "moderator" {
+				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+				return
+			}
+
+			ctx := context.WithValue(r.Context(), "user_type", claims.UserType)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
 }
 
 func generateUUID() string {
