@@ -3,17 +3,19 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"os"
+	"realty-avito/internal/repositories"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"golang.org/x/exp/slog"
-	"net/http"
-	"os"
-	myMiddleware "realty-avito/internal/http-server/middleware"
 
 	"realty-avito/internal/config"
 	"realty-avito/internal/http-server/handlers/dummyLogin"
 	"realty-avito/internal/http-server/handlers/house"
+	myMiddleware "realty-avito/internal/http-server/middleware"
 	mwLogger "realty-avito/internal/http-server/middleware/logger"
 	"realty-avito/internal/lib/logger/handlers/slogpretty"
 )
@@ -47,6 +49,7 @@ func main() {
 	defer pool.Close()
 
 	// TODO: создать flatsRepo + housesRepo + возможно moderatedFlatsRepo
+	flatsRepo := repositories.NewFlatsRepository(pool)
 
 	// init router
 	router := chi.NewRouter()
@@ -60,7 +63,7 @@ func main() {
 	router.Route("/house/{id}", func(r chi.Router) {
 		r.Use(myMiddleware.JWTMiddleware())
 		//r.Use(myMiddleware.JWTModeratorOnlyMiddleware())
-		r.Get("/", house.New(log))
+		r.Get("/", house.New(log, flatsRepo))
 	})
 
 	// Run server

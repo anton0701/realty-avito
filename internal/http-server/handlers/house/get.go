@@ -1,15 +1,23 @@
 package house
 
 import (
-	"github.com/go-chi/render"
+	"context"
 	"net/http"
+	"strconv"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/render"
 	"golang.org/x/exp/slog"
+
+	"realty-avito/internal/lib/logger/sl"
+	"realty-avito/internal/models"
 )
 
 // TODO: это будет FlatsRepository
+// TODO: разнести модели на слои: репо - entity, сервис - model и хэндлеры - DTO
 type FlatsGetter interface {
-	GetFlats(houseID int64) []Flat
+	GetFlatsByHouseID(ctx context.Context, houseID int64) ([]models.Flat, error)
+	GetApprovedFlatsByHouseID(ctx context.Context, houseID int64) ([]models.Flat, error)
 }
 
 type Request struct {
@@ -17,27 +25,10 @@ type Request struct {
 }
 
 type Response struct {
-	Flats []Flat `json:"flats" validate:"required,dive"`
+	Flats []models.Flat `json:"flats" validate:"required,dive"`
 }
 
-type FlatModerationStatus string
-
-const (
-	StatusCreated      FlatModerationStatus = "created"
-	StatusApproved     FlatModerationStatus = "approved"
-	StatusDeclined     FlatModerationStatus = "declined"
-	StatusOnModeration FlatModerationStatus = "on moderation"
-)
-
-type Flat struct {
-	ID      int64                `json:"id" validate:"required,min=1"`
-	HouseID int64                `json:"house_id" validate:"required,min=1"`
-	Price   int64                `json:"price" validate:"required,min=0"`
-	Rooms   int64                `json:"rooms" validate:"required,min=1"`
-	Status  FlatModerationStatus `json:"status" validate:"required,oneof='created approved declined \"on moderation\"'"`
-}
-
-func New(log *slog.Logger /*, flatsGetter FlatsGetter*/) http.HandlerFunc {
+func New(log *slog.Logger, flatsGetter FlatsGetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.house.get.new"
 
@@ -48,39 +39,40 @@ func New(log *slog.Logger /*, flatsGetter FlatsGetter*/) http.HandlerFunc {
 			return
 		}
 
+		var houseIDStr = chi.URLParam(r, "id")
+		houseID, err := strconv.ParseInt(houseIDStr, 10, 64)
+		if err != nil {
+			log.Error("invalid house ID", slog.String("house_id", houseIDStr), slog.String("op", op))
+			http.Error(w, "Invalid house ID", http.StatusBadRequest)
+			return
+		}
+
+		var flats []models.Flat
 		var response Response
 
 		if userType == "moderator" {
-			// TODO: implement me!
-			flats := []Flat{
-				{ID: 1, HouseID: 101, Price: 500000, Rooms: 2, Status: StatusApproved},
-				{ID: 2, HouseID: 101, Price: 600000, Rooms: 3, Status: StatusApproved},
-				{ID: 3, HouseID: 101, Price: 700000, Rooms: 4, Status: StatusOnModeration},
-				{ID: 4, HouseID: 101, Price: 800000, Rooms: 5, Status: StatusDeclined},
-				{ID: 5, HouseID: 101, Price: 900000, Rooms: 6, Status: StatusCreated},
-			}
-
-			response = Response{
-				Flats: flats,
-			}
-
+			flats, err = flatsGetter.GetFlatsByHouseID(r.Context(), houseID)
 		} else if userType == "client" {
-			// TODO: implement me!
-			flat := Flat{
-				ID:      1,
-				HouseID: 101,
-				Price:   500000,
-				Rooms:   2,
-				Status:  StatusApproved,
-			}
-
-			response = Response{
-				Flats: []Flat{flat},
-			}
+			flats, err = flatsGetter.GetApprovedFlatsByHouseID(r.Context(), houseID)
 		} else {
 			log.Error("unauthorized access attempt", slog.String("user_type", userType), slog.String("op", op))
 			w.WriteHeader(http.StatusUnauthorized)
 			return
+		}
+
+		if err != nil {
+			// TODO: обязтельно вернуть 500 ошибку с message, code и тд (как в сваггере)!!!!
+			log.Error("failed to get flats", slog.String("op", op), sl.Err(err))
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		if len(flats) == 0 {
+			flats = []models.Flat{}
+		}
+
+		response = Response{
+			Flats: flats,
 		}
 
 		render.JSON(w, r, response)
