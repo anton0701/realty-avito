@@ -12,6 +12,8 @@ import (
 	"golang.org/x/exp/slog"
 
 	"realty-avito/internal/config"
+	"realty-avito/internal/http-server/handlers/dummyLogin"
+	"realty-avito/internal/http-server/handlers/house"
 	myMiddleware "realty-avito/internal/http-server/middleware"
 	mwLogger "realty-avito/internal/http-server/middleware/logger"
 	"realty-avito/internal/lib/logger/handlers/slogpretty"
@@ -45,6 +47,8 @@ func main() {
 	}
 	defer pool.Close()
 
+	// TODO: создать flatsRepo + housesRepo + возможно moderatedFlatsRepo
+
 	// TODO: init router
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
@@ -52,7 +56,23 @@ func main() {
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
 
-	router.Get("/dummyLogin", myMiddleware.DummyLogin)
+	//router.Get("/dummyLogin", dummyLogin.DummyLogin)
+	router.Get("/dummyLogin", dummyLogin.New(log))
+	// TODO: продолжить завтра
+	//router.Get("/house/{id}", house.New(log, flatsRepository))
+	//router.Use(myMiddleware.JWTMiddleware())
+
+	router.With(myMiddleware.JWTMiddleware()).Get("/house/{id}", func(w http.ResponseWriter, r *http.Request) {
+		userType := r.Context().Value("user_type").(string)
+
+		log.Info("user_type", slog.String(userType, userType))
+
+		if userType == "moderator" {
+			house.GetModeratorHouseHandler()(w, r)
+		} else if userType == "client" {
+			house.GetClientHouseHandler()(w, r)
+		}
+	})
 
 	// TODO: run server
 	srv := &http.Server{
