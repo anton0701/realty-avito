@@ -61,7 +61,6 @@ func New(log *slog.Logger, flatsGetter FlatsGetter) http.HandlerFunc {
 		}
 
 		if err != nil {
-			// TODO: обязтельно вернуть 500 ошибку с message, code и тд (как в сваггере)!!!!
 			log.Error("failed to get flats", slog.String("op", op), sl.Err(err))
 
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

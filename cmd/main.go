@@ -51,6 +51,7 @@ func main() {
 
 	// TODO: создать flatsRepo + housesRepo + возможно moderatedFlatsRepo
 	flatsRepo := repositories.NewFlatsRepository(pool)
+	housesRepo := repositories.NewHousesRepository(pool)
 
 	// init router
 	router := chi.NewRouter()
@@ -72,7 +73,13 @@ func main() {
 	// POST /flat/create
 	router.Route("/flat/create", func(r chi.Router) {
 		r.Use(myMiddleware.JWTMiddleware())
-		r.Post("/", flat.New(log, flatsRepo))
+		r.Post("/", flat.CreateFlatHandler(log, flatsRepo))
+	})
+
+	// POST /house/create
+	router.Route("/house/create", func(r chi.Router) {
+		r.Use(myMiddleware.JWTModeratorOnlyMiddleware())
+		r.Post("/", house.CreateHouseHandler(log, housesRepo))
 	})
 
 	// Run server

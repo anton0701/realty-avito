@@ -28,7 +28,7 @@ type Response struct {
 	models.Flat `validate:"required,dive"`
 }
 
-func New(log *slog.Logger, flatsWriter FlatsWriter) http.HandlerFunc {
+func CreateFlatHandler(log *slog.Logger, flatsWriter FlatsWriter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.flat.create.new"
 
