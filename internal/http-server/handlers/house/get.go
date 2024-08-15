@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"golang.org/x/exp/slog"
 
@@ -13,7 +14,6 @@ import (
 	"realty-avito/internal/models"
 )
 
-// TODO: это будет FlatsRepository
 // TODO: разнести модели на слои: репо - entity, сервис - model и хэндлеры - DTO
 type FlatsGetter interface {
 	GetFlatsByHouseID(ctx context.Context, houseID int64) ([]models.Flat, error)
@@ -63,7 +63,15 @@ func New(log *slog.Logger, flatsGetter FlatsGetter) http.HandlerFunc {
 		if err != nil {
 			// TODO: обязтельно вернуть 500 ошибку с message, code и тд (как в сваггере)!!!!
 			log.Error("failed to get flats", slog.String("op", op), sl.Err(err))
+
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+
+			response := models.InternalServerErrorResponse{
+				Message:   err.Error(),
+				RequestID: middleware.GetReqID(r.Context()),
+				Code:      12345,
+			}
+			render.JSON(w, r, response)
 			return
 		}
 

@@ -29,3 +29,9 @@ type Flat struct {
 	Rooms   int64                `json:"rooms" validate:"required,min=1"`
 	Status  FlatModerationStatus `json:"status" validate:"required,oneof='created approved declined \"on moderation\"'"`
 }
+
+type CreateFlatEntity struct {
+	HouseID int64 `json:"house_id" validate:"required,min=1"`
+	Price   int64 `json:"price" validate:"required,min=0"`
+	Rooms   int64 `json:"rooms" validate:"required,min=1"`
+}

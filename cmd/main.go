@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"realty-avito/internal/repositories"
+	"realty-avito/internal/http-server/handlers/flat"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -18,6 +18,7 @@ import (
 	myMiddleware "realty-avito/internal/http-server/middleware"
 	mwLogger "realty-avito/internal/http-server/middleware/logger"
 	"realty-avito/internal/lib/logger/handlers/slogpretty"
+	"realty-avito/internal/repositories"
 )
 
 const (
@@ -58,12 +59,20 @@ func main() {
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
 
+	// GET /dummyLogin
 	router.Get("/dummyLogin", dummyLogin.New(log))
 
+	// GET /house/{id}
 	router.Route("/house/{id}", func(r chi.Router) {
 		r.Use(myMiddleware.JWTMiddleware())
 		//r.Use(myMiddleware.JWTModeratorOnlyMiddleware())
 		r.Get("/", house.New(log, flatsRepo))
+	})
+
+	// POST /flat/create
+	router.Route("/flat/create", func(r chi.Router) {
+		r.Use(myMiddleware.JWTMiddleware())
+		r.Post("/", flat.New(log, flatsRepo))
 	})
 
 	// Run server
