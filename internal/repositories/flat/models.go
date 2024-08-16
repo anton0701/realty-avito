@@ -1,5 +1,7 @@
 package flat
 
+import "time"
+
 type CreateFlatEntity struct {
 	HouseID int64
 	Price   int64
@@ -11,6 +13,7 @@ type UpdateFlatEntity struct {
 	ID          int64
 	Status      FlatModerationStatus
 	ModeratorID *string
+	UpdatedAt   *time.Time
 }
 
 type FlatEntity struct {

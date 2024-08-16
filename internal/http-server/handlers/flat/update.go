@@ -1,16 +1,18 @@
 package flat
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 	"golang.org/x/exp/slog"
-	"net/http"
+
 	"realty-avito/internal/converter"
 	"realty-avito/internal/http-server/handlers"
-	"realty-avito/internal/repositories/flat"
-
 	"realty-avito/internal/models"
+	"realty-avito/internal/repositories/flat"
 )
 
 func UpdateFlatHandler(log *slog.Logger, flatsRepository flat.FlatsRepository) http.HandlerFunc {
@@ -73,15 +75,16 @@ func UpdateFlatHandler(log *slog.Logger, flatsRepository flat.FlatsRepository) h
 			return
 		}
 
-		// TODO: сначала получить flat из БД, если у flat status = 'on moderate'
-		// TODO: ТО ВЕРНУТЬ ОШИБКУ, ТК КВАРТИРУ МОЖЕТ МЕНЯТЬ ТОЛЬКО 1 МОДЕРАТОР!
-
 		entityToUpdate := converter.ConvertUpdateFlatRequestToEntity(req)
 		entityToUpdate.ModeratorID = &moderatorIDFromRequest
+		now := time.Now()
+		entityToUpdate.UpdatedAt = &now
 
 		updatedFlat, err := flatsRepository.UpdateFlat(r.Context(), entityToUpdate)
 		if err != nil {
-			log.Error("failed to update flat", slog.String("op", op), slog.StringValue(err.Error()))
+			log.Error("failed to update flat",
+				slog.String("op", op),
+				slog.StringValue(err.Error()))
 
 			w.Header().Set("Retry-After", "60")
 			w.WriteHeader(http.StatusInternalServerError)

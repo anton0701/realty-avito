@@ -153,6 +153,7 @@ func (r *flatsRepository) UpdateFlat(ctx context.Context, updateFlatEntity Updat
 		Update("flats").
 		Set("status", updateFlatEntity.Status).
 		Set("moderator_id", updateFlatEntity.ModeratorID).
+		Set("updated_at", updateFlatEntity.UpdatedAt).
 		Where(squirrel.Eq{"id": updateFlatEntity.ID}).
 		Suffix("RETURNING id, house_id, price, rooms, status, moderator_id").
 		PlaceholderFormat(squirrel.Dollar)
