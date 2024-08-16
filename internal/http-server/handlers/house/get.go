@@ -63,7 +63,8 @@ func New(log *slog.Logger, flatsGetter FlatsGetter) http.HandlerFunc {
 		if err != nil {
 			log.Error("failed to get flats", slog.String("op", op), sl.Err(err))
 
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Header().Set("Retry-After", "60")
 
 			response := models.InternalServerErrorResponse{
 				Message:   err.Error(),

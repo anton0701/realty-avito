@@ -72,7 +72,8 @@ func CreateFlatHandler(log *slog.Logger, flatsWriter FlatsWriter) http.HandlerFu
 		if err != nil {
 			log.Error("failed to create flat", slog.String("op", op), sl.Err(err))
 
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Header().Set("Retry-After", "60")
 
 			response := models.InternalServerErrorResponse{
 				Message:   err.Error(),

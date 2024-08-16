@@ -15,7 +15,6 @@ type DummyLoginResponse struct {
 	Token string `json:"token"`
 }
 
-// TODO: вроде правильно
 func New(log *slog.Logger) http.HandlerFunc {
 	// TODO: вынести строки в константы
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -36,11 +35,13 @@ func New(log *slog.Logger) http.HandlerFunc {
 
 		token, err := myMiddleware.GenerateJWT(userType)
 		if err != nil {
+			log.Error("failed to create dummy token", slog.String("op", op), slog.StringValue(err.Error()))
+
 			w.Header().Set("Retry-After", "60")
 			w.WriteHeader(http.StatusInternalServerError)
 
 			response := models.InternalServerErrorResponse{
-				Message:   "Что-то пошло не так",
+				Message:   err.Error(),
 				RequestID: middleware.GetReqID(r.Context()),
 				Code:      12345,
 			}

@@ -72,7 +72,9 @@ func CreateHouseHandler(log *slog.Logger, housesRepo repositories.HousesReposito
 		if err != nil {
 			log.Error("failed to create house", slog.String("op", op), slog.StringValue(err.Error()))
 
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Header().Set("Retry-After", "60")
+
 			response := models.InternalServerErrorResponse{
 				Message:   err.Error(),
 				RequestID: middleware.GetReqID(r.Context()),

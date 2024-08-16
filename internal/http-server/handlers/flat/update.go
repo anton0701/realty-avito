@@ -50,7 +50,7 @@ func UpdateFlatHandler(log *slog.Logger, flatsWriter FlatsWriter) http.HandlerFu
 			w.WriteHeader(http.StatusInternalServerError)
 
 			response := models.InternalServerErrorResponse{
-				Message:   "Что-то пошло не так",
+				Message:   err.Error(),
 				RequestID: middleware.GetReqID(r.Context()),
 				Code:      12345,
 			}
