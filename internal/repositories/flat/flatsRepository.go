@@ -1,20 +1,17 @@
-package repositories
+package flat
 
 import (
 	"context"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v4/pgxpool"
-
-	"realty-avito/internal/models"
 )
 
-// TODO: разнести модели на слои: репо - entity, сервис - model и хэндлеры - DTO
 type FlatsRepository interface {
-	GetFlatsByHouseID(ctx context.Context, houseID int64) ([]models.Flat, error)
-	GetApprovedFlatsByHouseID(ctx context.Context, houseID int64) ([]models.Flat, error)
-	CreateFlat(ctx context.Context, flatModel models.CreateFlatEntity) (*models.Flat, error)
-	UpdateFlat(ctx context.Context, updateFlatModel models.UpdateFlatEntity) (*models.Flat, error)
+	GetFlatsByHouseID(ctx context.Context, houseID int64) ([]FlatEntity, error)
+	GetApprovedFlatsByHouseID(ctx context.Context, houseID int64) ([]FlatEntity, error)
+	CreateFlat(ctx context.Context, flatModel CreateFlatEntity) (*FlatEntity, error)
+	UpdateFlat(ctx context.Context, updateFlatModel UpdateFlatEntity) (*FlatEntity, error)
 }
 
 type flatsRepository struct {
@@ -25,7 +22,7 @@ func NewFlatsRepository(pool *pgxpool.Pool) FlatsRepository {
 	return &flatsRepository{pool: pool}
 }
 
-func (r *flatsRepository) GetFlatsByHouseID(ctx context.Context, houseID int64) ([]models.Flat, error) {
+func (r *flatsRepository) GetFlatsByHouseID(ctx context.Context, houseID int64) ([]FlatEntity, error) {
 	query := squirrel.
 		Select("id", "house_id", "price", "rooms", "status").
 		From("flats").
@@ -43,10 +40,10 @@ func (r *flatsRepository) GetFlatsByHouseID(ctx context.Context, houseID int64) 
 	}
 	defer rows.Close()
 
-	var flats []models.Flat
+	var flats []FlatEntity
 
 	for rows.Next() {
-		var flat models.Flat
+		var flat FlatEntity
 
 		err := rows.Scan(&flat.ID, &flat.HouseID, &flat.Price, &flat.Rooms, &flat.Status)
 		if err != nil {
@@ -59,13 +56,15 @@ func (r *flatsRepository) GetFlatsByHouseID(ctx context.Context, houseID int64) 
 	return flats, nil
 }
 
-func (r *flatsRepository) GetApprovedFlatsByHouseID(ctx context.Context, houseID int64) ([]models.Flat, error) {
+func (r *flatsRepository) GetApprovedFlatsByHouseID(ctx context.Context, houseID int64) ([]FlatEntity, error) {
 	query := squirrel.
 		Select("id", "house_id", "price", "rooms", "status").
 		From("flats").
 		Where(
-			squirrel.Eq{"house_id": houseID,
-				"status": models.StatusApproved}).
+			squirrel.Eq{
+				"house_id": houseID,
+				"status":   StatusApproved,
+			}).
 		PlaceholderFormat(squirrel.Dollar)
 
 	sql, args, err := query.ToSql()
@@ -79,9 +78,9 @@ func (r *flatsRepository) GetApprovedFlatsByHouseID(ctx context.Context, houseID
 	}
 	defer rows.Close()
 
-	var flats []models.Flat
+	var flats []FlatEntity
 	for rows.Next() {
-		var flat models.Flat
+		var flat FlatEntity
 		if err := rows.Scan(&flat.ID, &flat.HouseID, &flat.Price, &flat.Rooms, &flat.Status); err != nil {
 			return nil, err
 		}
@@ -91,12 +90,12 @@ func (r *flatsRepository) GetApprovedFlatsByHouseID(ctx context.Context, houseID
 	return flats, nil
 }
 
-func (r *flatsRepository) CreateFlat(ctx context.Context, flatModel models.CreateFlatEntity) (*models.Flat, error) {
+func (r *flatsRepository) CreateFlat(ctx context.Context, flatEntity CreateFlatEntity) (*FlatEntity, error) {
 	query := squirrel.
 		Insert("flats").
 		PlaceholderFormat(squirrel.Dollar).
 		Columns("house_id", "price", "rooms", "status").
-		Values(flatModel.HouseID, flatModel.Price, flatModel.Rooms, models.StatusOnModeration).
+		Values(flatEntity.HouseID, flatEntity.Price, flatEntity.Rooms, StatusOnModeration).
 		Suffix("RETURNING id")
 
 	sql, args, err := query.ToSql()
@@ -113,22 +112,22 @@ func (r *flatsRepository) CreateFlat(ctx context.Context, flatModel models.Creat
 		return nil, err
 	}
 
-	var flat = &models.Flat{
+	var flat = &FlatEntity{
 		ID:      flatID,
-		HouseID: flatModel.HouseID,
-		Price:   flatModel.Price,
-		Rooms:   flatModel.Rooms,
-		Status:  models.StatusOnModeration,
+		HouseID: flatEntity.HouseID,
+		Price:   flatEntity.Price,
+		Rooms:   flatEntity.Rooms,
+		Status:  StatusOnModeration,
 	}
 
 	return flat, nil
 }
 
-func (r *flatsRepository) UpdateFlat(ctx context.Context, updateFlatModel models.UpdateFlatEntity) (*models.Flat, error) {
+func (r *flatsRepository) UpdateFlat(ctx context.Context, updateFlatEntity UpdateFlatEntity) (*FlatEntity, error) {
 	query := squirrel.
 		Update("flats").
-		Set("status", updateFlatModel.Status).
-		Where(squirrel.Eq{"id": updateFlatModel.ID}).
+		Set("status", updateFlatEntity.Status).
+		Where(squirrel.Eq{"id": updateFlatEntity.ID}).
 		Suffix("RETURNING id, house_id, price, rooms, status").
 		PlaceholderFormat(squirrel.Dollar)
 
@@ -137,7 +136,7 @@ func (r *flatsRepository) UpdateFlat(ctx context.Context, updateFlatModel models
 		return nil, err
 	}
 
-	var flat models.Flat
+	var flat FlatEntity
 	err = r.pool.
 		QueryRow(ctx, sql, args...).
 		Scan(&flat.ID, &flat.HouseID, &flat.Price, &flat.Rooms, &flat.Status)

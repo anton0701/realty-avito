@@ -5,36 +5,29 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"realty-avito/internal/http-server/handlers"
 
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 	"golang.org/x/exp/slog"
 
+	"realty-avito/internal/converter"
 	"realty-avito/internal/lib/logger/sl"
 	"realty-avito/internal/models"
+	"realty-avito/internal/repositories/flat"
 )
 
 type FlatsWriter interface {
-	CreateFlat(ctx context.Context, flatModel models.CreateFlatEntity) (*models.Flat, error)
-	UpdateFlat(ctx context.Context, updateFlatModel models.UpdateFlatEntity) (*models.Flat, error)
-}
-
-type Request struct {
-	HouseID int64 `json:"house_id" validate:"required,min=1"`
-	Price   int64 `json:"price" validate:"required,min=0"`
-	Rooms   int64 `json:"rooms" validate:"required,min=1"`
-}
-
-type Response struct {
-	models.Flat `validate:"required,dive"`
+	CreateFlat(ctx context.Context, flatModel flat.CreateFlatEntity) (*flat.FlatEntity, error)
+	UpdateFlat(ctx context.Context, updateFlatModel flat.UpdateFlatEntity) (*flat.FlatEntity, error)
 }
 
 func CreateFlatHandler(log *slog.Logger, flatsWriter FlatsWriter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "handlers.flat.create.new"
+		const op = "handlers.flat.create"
 
-		var req Request
+		var req handlers.CreateFlatRequest
 
 		err := render.DecodeJSON(r.Body, &req)
 		if errors.Is(err, io.EOF) {
@@ -58,17 +51,9 @@ func CreateFlatHandler(log *slog.Logger, flatsWriter FlatsWriter) http.HandlerFu
 			return
 		}
 
-		var response Response
+		flatEntity := converter.ConvertCreateFlatRequestToEntity(req)
 
-		// TODO: перенести в конвертер
-		flatEntity := models.CreateFlatEntity{
-			HouseID: req.HouseID,
-			Price:   req.Price,
-			Rooms:   req.Rooms,
-		}
-
-		createdFlatModel, err := flatsWriter.CreateFlat(r.Context(), flatEntity)
-
+		createdFlatEntity, err := flatsWriter.CreateFlat(r.Context(), flatEntity)
 		if err != nil {
 			log.Error("failed to create flat", slog.String("op", op), sl.Err(err))
 
@@ -84,7 +69,7 @@ func CreateFlatHandler(log *slog.Logger, flatsWriter FlatsWriter) http.HandlerFu
 			return
 		}
 
-		response = Response{*createdFlatModel}
+		response := converter.ConvertFlatEntityToCreateResponse(createdFlatEntity)
 
 		render.JSON(w, r, response)
 		log.Info("request handled successfully", slog.String("op", op))

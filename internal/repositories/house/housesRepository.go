@@ -1,16 +1,14 @@
-package repositories
+package house
 
 import (
 	"context"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v4/pgxpool"
-
-	"realty-avito/internal/models"
 )
 
 type HousesRepository interface {
-	CreateHouse(ctx context.Context, houseModel models.CreateHouseEntity) (*models.House, error)
+	CreateHouse(ctx context.Context, createHouseEntity CreateHouseEntity) (*HouseEntity, error)
 }
 
 type housesRepository struct {
@@ -21,12 +19,12 @@ func NewHousesRepository(pool *pgxpool.Pool) HousesRepository {
 	return &housesRepository{pool: pool}
 }
 
-func (r *housesRepository) CreateHouse(ctx context.Context, houseModel models.CreateHouseEntity) (*models.House, error) {
+func (r *housesRepository) CreateHouse(ctx context.Context, createHouseEntity CreateHouseEntity) (*HouseEntity, error) {
 	query := squirrel.
 		Insert("houses").
 		PlaceholderFormat(squirrel.Dollar).
 		Columns("address", "year", "developer").
-		Values(houseModel.Address, houseModel.Year, houseModel.Developer).
+		Values(createHouseEntity.Address, createHouseEntity.Year, createHouseEntity.Developer).
 		Suffix("RETURNING id, created_at, address, year, developer")
 
 	sql, args, err := query.ToSql()
@@ -34,7 +32,7 @@ func (r *housesRepository) CreateHouse(ctx context.Context, houseModel models.Cr
 		return nil, err
 	}
 
-	var house models.House
+	var house HouseEntity
 
 	err = r.pool.
 		QueryRow(ctx, sql, args...).

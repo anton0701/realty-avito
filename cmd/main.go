@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"realty-avito/internal/http-server/handlers/flat"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -14,11 +13,13 @@ import (
 
 	"realty-avito/internal/config"
 	"realty-avito/internal/http-server/handlers/dummyLogin"
+	"realty-avito/internal/http-server/handlers/flat"
 	"realty-avito/internal/http-server/handlers/house"
 	myMiddleware "realty-avito/internal/http-server/middleware"
 	mwLogger "realty-avito/internal/http-server/middleware/logger"
 	"realty-avito/internal/lib/logger/handlers/slogpretty"
-	"realty-avito/internal/repositories"
+	flatRepo "realty-avito/internal/repositories/flat"
+	houseRepo "realty-avito/internal/repositories/house"
 )
 
 const (
@@ -50,8 +51,8 @@ func main() {
 	defer pool.Close()
 
 	// TODO: создать flatsRepo + housesRepo + возможно moderatedFlatsRepo
-	flatsRepo := repositories.NewFlatsRepository(pool)
-	housesRepo := repositories.NewHousesRepository(pool)
+	flatsRepo := flatRepo.NewFlatsRepository(pool)
+	housesRepo := houseRepo.NewHousesRepository(pool)
 
 	// init router
 	router := chi.NewRouter()

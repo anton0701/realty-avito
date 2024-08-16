@@ -18,7 +18,7 @@ type DummyLoginResponse struct {
 func New(log *slog.Logger) http.HandlerFunc {
 	// TODO: вынести строки в константы
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "handlers.dummyLogin.dummyLogin.New"
+		const op = "handlers.dummyLogin.dummyLogin"
 
 		log := log.With(
 			slog.String("op", op),
