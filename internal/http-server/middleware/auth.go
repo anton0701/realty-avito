@@ -89,6 +89,8 @@ func JWTModeratorOnlyMiddleware() func(next http.Handler) http.Handler {
 			}
 
 			ctx := context.WithValue(r.Context(), "user_type", claims.UserType)
+			ctx = context.WithValue(ctx, "moderator_id", tokenString)
+
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

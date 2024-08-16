@@ -8,11 +8,12 @@ import (
 	"net/http"
 	"realty-avito/internal/converter"
 	"realty-avito/internal/http-server/handlers"
+	"realty-avito/internal/repositories/flat"
 
 	"realty-avito/internal/models"
 )
 
-func UpdateFlatHandler(log *slog.Logger, flatsWriter FlatsWriter) http.HandlerFunc {
+func UpdateFlatHandler(log *slog.Logger, flatsRepository flat.FlatsRepository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.flat.update"
 
@@ -30,12 +31,55 @@ func UpdateFlatHandler(log *slog.Logger, flatsWriter FlatsWriter) http.HandlerFu
 			return
 		}
 
+		moderatorIDFromRequest, ok := r.Context().Value("moderator_id").(string)
+		if !ok {
+			log.Error("Error: no moderator_id in context", slog.String("op", op))
+			w.WriteHeader(http.StatusInternalServerError)
+
+			response := models.InternalServerErrorResponse{
+				Message:   "Error: no moderator_id in context",
+				RequestID: middleware.GetReqID(r.Context()),
+				Code:      12345,
+			}
+
+			render.JSON(w, r, response)
+			return
+		}
+
+		flatToUpdate, err := flatsRepository.GetFlatByFlatID(r.Context(), req.ID)
+		if err != nil {
+			// TODO: создать 1 метод, который это все заполняет
+			log.Error("failed to update flat", slog.String("op", op), slog.StringValue(err.Error()))
+
+			w.Header().Set("Retry-After", "60")
+			w.WriteHeader(http.StatusInternalServerError)
+
+			response := models.InternalServerErrorResponse{
+				Message:   err.Error(),
+				RequestID: middleware.GetReqID(r.Context()),
+				Code:      12345,
+			}
+
+			render.JSON(w, r, response)
+			return
+		}
+
+		if flatToUpdate.ModeratorID != nil && *flatToUpdate.ModeratorID != moderatorIDFromRequest {
+			log.Error("failed to update flat, flat is under moderation by another moderator",
+				slog.String("op", op))
+			http.Error(w,
+				"failed to update flat, flat is under moderation by another moderator",
+				http.StatusForbidden)
+			return
+		}
+
 		// TODO: сначала получить flat из БД, если у flat status = 'on moderate'
 		// TODO: ТО ВЕРНУТЬ ОШИБКУ, ТК КВАРТИРУ МОЖЕТ МЕНЯТЬ ТОЛЬКО 1 МОДЕРАТОР!
 
 		entityToUpdate := converter.ConvertUpdateFlatRequestToEntity(req)
+		entityToUpdate.ModeratorID = &moderatorIDFromRequest
 
-		updatedFlat, err := flatsWriter.UpdateFlat(r.Context(), entityToUpdate)
+		updatedFlat, err := flatsRepository.UpdateFlat(r.Context(), entityToUpdate)
 		if err != nil {
 			log.Error("failed to update flat", slog.String("op", op), slog.StringValue(err.Error()))
 

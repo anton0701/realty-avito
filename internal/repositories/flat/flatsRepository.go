@@ -9,6 +9,7 @@ import (
 
 type FlatsRepository interface {
 	GetFlatsByHouseID(ctx context.Context, houseID int64) ([]FlatEntity, error)
+	GetFlatByFlatID(ctx context.Context, flatID int64) (*FlatEntity, error)
 	GetApprovedFlatsByHouseID(ctx context.Context, houseID int64) ([]FlatEntity, error)
 	CreateFlat(ctx context.Context, flatModel CreateFlatEntity) (*FlatEntity, error)
 	UpdateFlat(ctx context.Context, updateFlatModel UpdateFlatEntity) (*FlatEntity, error)
@@ -54,6 +55,30 @@ func (r *flatsRepository) GetFlatsByHouseID(ctx context.Context, houseID int64) 
 	}
 
 	return flats, nil
+}
+
+func (r *flatsRepository) GetFlatByFlatID(ctx context.Context, flatID int64) (*FlatEntity, error) {
+	query := squirrel.
+		Select("id", "house_id", "price", "rooms", "status", "moderator_id").
+		From("flats").
+		Where(squirrel.Eq{"id": flatID}).
+		PlaceholderFormat(squirrel.Dollar)
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	var flat FlatEntity
+
+	err = r.pool.
+		QueryRow(ctx, sql, args...).
+		Scan(&flat.ID, &flat.HouseID, &flat.Price, &flat.Rooms, &flat.Status, &flat.ModeratorID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &flat, nil
 }
 
 func (r *flatsRepository) GetApprovedFlatsByHouseID(ctx context.Context, houseID int64) ([]FlatEntity, error) {
@@ -127,8 +152,9 @@ func (r *flatsRepository) UpdateFlat(ctx context.Context, updateFlatEntity Updat
 	query := squirrel.
 		Update("flats").
 		Set("status", updateFlatEntity.Status).
+		Set("moderator_id", updateFlatEntity.ModeratorID).
 		Where(squirrel.Eq{"id": updateFlatEntity.ID}).
-		Suffix("RETURNING id, house_id, price, rooms, status").
+		Suffix("RETURNING id, house_id, price, rooms, status, moderator_id").
 		PlaceholderFormat(squirrel.Dollar)
 
 	sql, args, err := query.ToSql()
@@ -139,7 +165,7 @@ func (r *flatsRepository) UpdateFlat(ctx context.Context, updateFlatEntity Updat
 	var flat FlatEntity
 	err = r.pool.
 		QueryRow(ctx, sql, args...).
-		Scan(&flat.ID, &flat.HouseID, &flat.Price, &flat.Rooms, &flat.Status)
+		Scan(&flat.ID, &flat.HouseID, &flat.Price, &flat.Rooms, &flat.Status, &flat.ModeratorID)
 	if err != nil {
 		return nil, err
 	}

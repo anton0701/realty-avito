@@ -8,16 +8,18 @@ type CreateFlatEntity struct {
 }
 
 type UpdateFlatEntity struct {
-	ID     int64
-	Status FlatModerationStatus
+	ID          int64
+	Status      FlatModerationStatus
+	ModeratorID *string
 }
 
 type FlatEntity struct {
-	ID      int64
-	HouseID int64
-	Price   int64
-	Rooms   int64
-	Status  FlatModerationStatus
+	ID          int64
+	HouseID     int64
+	Price       int64
+	Rooms       int64
+	Status      FlatModerationStatus
+	ModeratorID *string
 }
 
 type FlatModerationStatus string
