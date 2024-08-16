@@ -14,6 +14,7 @@ type FlatsRepository interface {
 	GetFlatsByHouseID(ctx context.Context, houseID int64) ([]models.Flat, error)
 	GetApprovedFlatsByHouseID(ctx context.Context, houseID int64) ([]models.Flat, error)
 	CreateFlat(ctx context.Context, flatModel models.CreateFlatEntity) (*models.Flat, error)
+	UpdateFlat(ctx context.Context, updateFlatModel models.UpdateFlatEntity) (*models.Flat, error)
 }
 
 type flatsRepository struct {
@@ -121,4 +122,28 @@ func (r *flatsRepository) CreateFlat(ctx context.Context, flatModel models.Creat
 	}
 
 	return flat, nil
+}
+
+func (r *flatsRepository) UpdateFlat(ctx context.Context, updateFlatModel models.UpdateFlatEntity) (*models.Flat, error) {
+	query := squirrel.
+		Update("flats").
+		Set("status", updateFlatModel.Status).
+		Where(squirrel.Eq{"id": updateFlatModel.ID}).
+		Suffix("RETURNING id, house_id, price, rooms, status").
+		PlaceholderFormat(squirrel.Dollar)
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	var flat models.Flat
+	err = r.pool.
+		QueryRow(ctx, sql, args...).
+		Scan(&flat.ID, &flat.HouseID, &flat.Price, &flat.Rooms, &flat.Status)
+	if err != nil {
+		return nil, err
+	}
+
+	return &flat, nil
 }

@@ -3,12 +3,13 @@ package flat
 import (
 	"context"
 	"errors"
+	"io"
+	"net/http"
+
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 	"golang.org/x/exp/slog"
-	"io"
-	"net/http"
 
 	"realty-avito/internal/lib/logger/sl"
 	"realty-avito/internal/models"
@@ -16,6 +17,7 @@ import (
 
 type FlatsWriter interface {
 	CreateFlat(ctx context.Context, flatModel models.CreateFlatEntity) (*models.Flat, error)
+	UpdateFlat(ctx context.Context, updateFlatModel models.UpdateFlatEntity) (*models.Flat, error)
 }
 
 type Request struct {
