@@ -17,7 +17,7 @@ func ConvertCreateFlatRequestToEntity(req handlers.CreateFlatRequest) flatRepo.C
 		HouseID: req.HouseID,
 		Price:   req.Price,
 		Rooms:   req.Rooms,
-		Status:  flatRepo.StatusOnModeration,
+		Status:  flatRepo.StatusCreated,
 	}
 }
 

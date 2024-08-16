@@ -95,7 +95,7 @@ func (r *flatsRepository) CreateFlat(ctx context.Context, flatEntity CreateFlatE
 		Insert("flats").
 		PlaceholderFormat(squirrel.Dollar).
 		Columns("house_id", "price", "rooms", "status").
-		Values(flatEntity.HouseID, flatEntity.Price, flatEntity.Rooms, StatusOnModeration).
+		Values(flatEntity.HouseID, flatEntity.Price, flatEntity.Rooms, StatusCreated).
 		Suffix("RETURNING id")
 
 	sql, args, err := query.ToSql()
@@ -117,7 +117,7 @@ func (r *flatsRepository) CreateFlat(ctx context.Context, flatEntity CreateFlatE
 		HouseID: flatEntity.HouseID,
 		Price:   flatEntity.Price,
 		Rooms:   flatEntity.Rooms,
-		Status:  StatusOnModeration,
+		Status:  StatusCreated,
 	}
 
 	return flat, nil

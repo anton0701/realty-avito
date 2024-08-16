@@ -16,7 +16,6 @@ func UpdateFlatHandler(log *slog.Logger, flatsWriter FlatsWriter) http.HandlerFu
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.flat.update"
 
-		// TODO: разнести entity и request + converter + validator
 		var req handlers.UpdateFlatRequest
 
 		if err := render.DecodeJSON(r.Body, &req); err != nil {
@@ -30,6 +29,9 @@ func UpdateFlatHandler(log *slog.Logger, flatsWriter FlatsWriter) http.HandlerFu
 			http.Error(w, "validation failed", http.StatusBadRequest)
 			return
 		}
+
+		// TODO: сначала получить flat из БД, если у flat status = 'on moderate'
+		// TODO: ТО ВЕРНУТЬ ОШИБКУ, ТК КВАРТИРУ МОЖЕТ МЕНЯТЬ ТОЛЬКО 1 МОДЕРАТОР!
 
 		entityToUpdate := converter.ConvertUpdateFlatRequestToEntity(req)
 
