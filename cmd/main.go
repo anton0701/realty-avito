@@ -10,6 +10,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"golang.org/x/exp/slog"
 
+	"realty-avito/internal/client/db/pg"
+	"realty-avito/internal/client/db/transaction"
 	"realty-avito/internal/config"
 	"realty-avito/internal/http-server/handlers/dummyLogin"
 	"realty-avito/internal/http-server/handlers/flat"
@@ -36,17 +38,21 @@ func main() {
 		slog.String("env", cfg.Env),
 	)
 
-	// init storage postgres
-	pool, err := postgres.InitPostgres(ctx, cfg.Postgres)
+	dsn := postgres.CreatePostgresDSN(cfg.Postgres)
+	pgClient, err := pg.New(ctx, dsn)
 	if err != nil {
-		log.Error("failed to initialize postgres", slog.String("error", err.Error()))
+		log.Error("failed to initialize postgres client", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
-	defer pool.Close()
+
+	defer pgClient.Close()
+
+	// init transaction manager
+	txManager := transaction.NewTransactionManager(pgClient.DB())
 
 	// TODO: создать flatsRepo + housesRepo + возможно moderatedFlatsRepo
-	flatsRepo := flatRepo.NewFlatsRepository(pool)
-	housesRepo := houseRepo.NewHousesRepository(pool)
+	flatsRepo := flatRepo.NewFlatsRepository(pgClient)
+	housesRepo := houseRepo.NewHousesRepository(pgClient)
 
 	// init router
 	router := chi.NewRouter()
@@ -61,7 +67,6 @@ func main() {
 	// GET /house/{id}
 	router.Route("/house/{id}", func(r chi.Router) {
 		r.Use(myMiddleware.JWTMiddleware())
-		//r.Use(myMiddleware.JWTModeratorOnlyMiddleware())
 		r.Get("/", house.New(log, flatsRepo))
 	})
 
@@ -74,7 +79,7 @@ func main() {
 	// POST /flat/create
 	router.Route("/flat/create", func(r chi.Router) {
 		r.Use(myMiddleware.JWTMiddleware())
-		r.Post("/", flat.CreateFlatHandler(log, flatsRepo))
+		r.Post("/", flat.CreateFlatHandler(log, flatsRepo, housesRepo, txManager))
 	})
 
 	// POST /flat/update

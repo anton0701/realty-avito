@@ -25,3 +25,10 @@ func InitPostgres(ctx context.Context, cfg config.PostgresConfig) (*pgxpool.Pool
 
 	return dbpool, nil
 }
+
+func CreatePostgresDSN(cfg config.PostgresConfig) string {
+	dsn := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+		cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.DBName)
+
+	return dsn
+}

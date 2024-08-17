@@ -48,6 +48,7 @@ func UpdateFlatHandler(log *slog.Logger, flatsRepository flat.FlatsRepository) h
 			return
 		}
 
+		// TODO: вынести в func checkModerator()
 		flatToUpdate, err := flatsRepository.GetFlatByFlatID(r.Context(), req.ID)
 		if err != nil {
 			// TODO: создать 1 метод, который это все заполняет

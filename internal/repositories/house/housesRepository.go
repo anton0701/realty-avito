@@ -4,42 +4,74 @@ import (
 	"context"
 
 	"github.com/Masterminds/squirrel"
-	"github.com/jackc/pgx/v4/pgxpool"
+
+	"realty-avito/internal/client/db"
 )
 
 type HousesRepository interface {
 	CreateHouse(ctx context.Context, createHouseEntity CreateHouseEntity) (*HouseEntity, error)
+	UpdateHouseUpdatedAt(ctx context.Context, houseID int64) error
 }
 
 type housesRepository struct {
-	pool *pgxpool.Pool
+	db db.Client
 }
 
-func NewHousesRepository(pool *pgxpool.Pool) HousesRepository {
-	return &housesRepository{pool: pool}
+func NewHousesRepository(db db.Client) HousesRepository {
+	return &housesRepository{db: db}
 }
 
 func (r *housesRepository) CreateHouse(ctx context.Context, createHouseEntity CreateHouseEntity) (*HouseEntity, error) {
-	query := squirrel.
+	insertBuilder := squirrel.
 		Insert("houses").
 		PlaceholderFormat(squirrel.Dollar).
 		Columns("address", "year", "developer").
 		Values(createHouseEntity.Address, createHouseEntity.Year, createHouseEntity.Developer).
 		Suffix("RETURNING id, created_at, address, year, developer")
 
-	sql, args, err := query.ToSql()
+	query, args, err := insertBuilder.ToSql()
 	if err != nil {
 		return nil, err
 	}
 
+	q := db.Query{
+		Name:     "housesRepository.CreateHouse",
+		QueryRaw: query,
+	}
+
 	var house HouseEntity
 
-	err = r.pool.
-		QueryRow(ctx, sql, args...).
+	err = r.db.DB().
+		QueryRowContext(ctx, q, args...).
 		Scan(&house.ID, &house.CreatedAt, &house.Address, &house.Year, &house.Developer)
 	if err != nil {
 		return nil, err
 	}
 
 	return &house, nil
+}
+
+func (r *housesRepository) UpdateHouseUpdatedAt(ctx context.Context, houseID int64) error {
+	updateBuilder := squirrel.
+		Update("houses").
+		Set("updated_at", squirrel.Expr("CURRENT_TIMESTAMP")).
+		Where(squirrel.Eq{"id": houseID}).
+		PlaceholderFormat(squirrel.Dollar)
+
+	query, args, err := updateBuilder.ToSql()
+	if err != nil {
+		return err
+	}
+
+	q := db.Query{
+		Name:     "housesRepository.UpdateHouseUpdatedAt",
+		QueryRaw: query,
+	}
+
+	_, err = r.db.DB().ExecContext(ctx, q, args...)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -5,14 +5,15 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"realty-avito/internal/http-server/handlers"
 
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 	"golang.org/x/exp/slog"
 
+	"realty-avito/internal/client/db"
 	"realty-avito/internal/converter"
+	"realty-avito/internal/http-server/handlers"
 	"realty-avito/internal/lib/logger/sl"
 	"realty-avito/internal/models"
 	"realty-avito/internal/repositories/flat"
@@ -23,15 +24,23 @@ type FlatsWriter interface {
 	UpdateFlat(ctx context.Context, updateFlatModel flat.UpdateFlatEntity) (*flat.FlatEntity, error)
 }
 
-func CreateFlatHandler(log *slog.Logger, flatsWriter FlatsWriter) http.HandlerFunc {
+type HousesWriter interface {
+	UpdateHouseUpdatedAt(ctx context.Context, houseID int64) error
+}
+
+func CreateFlatHandler(log *slog.Logger, flatsWriter FlatsWriter, housesWriter HousesWriter, txManager db.TxManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.flat.create"
+
+		ctx := r.Context()
 
 		var req handlers.CreateFlatRequest
 
 		err := render.DecodeJSON(r.Body, &req)
 		if errors.Is(err, io.EOF) {
-			log.Error("request body is empty", slog.String("request_id", middleware.GetReqID(r.Context())), slog.String("op", op))
+			log.Error("request body is empty",
+				slog.String("request_id", middleware.GetReqID(ctx)),
+				slog.String("op", op))
 			http.Error(w, "request body is empty", http.StatusBadRequest)
 			return
 		}
@@ -53,7 +62,25 @@ func CreateFlatHandler(log *slog.Logger, flatsWriter FlatsWriter) http.HandlerFu
 
 		flatEntity := converter.ConvertCreateFlatRequestToEntity(req)
 
-		createdFlatEntity, err := flatsWriter.CreateFlat(r.Context(), flatEntity)
+		var successfullyCreatedFlatEntity *flat.FlatEntity
+
+		err = txManager.ReadCommitted(ctx, func(ctx context.Context) error {
+			var errTx error
+			createdFlatEntity, errTx := flatsWriter.CreateFlat(ctx, flatEntity)
+			if errTx != nil {
+				return errTx
+			}
+
+			errTx = housesWriter.UpdateHouseUpdatedAt(ctx, req.HouseID)
+			if errTx != nil {
+				return errTx
+			}
+
+			successfullyCreatedFlatEntity = createdFlatEntity
+
+			return nil
+		})
+
 		if err != nil {
 			log.Error("failed to create flat", slog.String("op", op), sl.Err(err))
 
@@ -62,14 +89,14 @@ func CreateFlatHandler(log *slog.Logger, flatsWriter FlatsWriter) http.HandlerFu
 
 			response := models.InternalServerErrorResponse{
 				Message:   err.Error(),
-				RequestID: middleware.GetReqID(r.Context()),
+				RequestID: middleware.GetReqID(ctx),
 				Code:      12345,
 			}
 			render.JSON(w, r, response)
 			return
 		}
 
-		response := converter.ConvertFlatEntityToCreateResponse(createdFlatEntity)
+		response := converter.ConvertFlatEntityToCreateResponse(successfullyCreatedFlatEntity)
 
 		render.JSON(w, r, response)
 		log.Info("request handled successfully", slog.String("op", op))
