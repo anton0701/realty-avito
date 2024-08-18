@@ -14,8 +14,8 @@ import (
 
 	"realty-avito/internal/http-server/handlers"
 	"realty-avito/internal/lib/logger"
-	"realty-avito/internal/repositories/flat"
-	"realty-avito/internal/repositories/flat/mocks"
+	"realty-avito/internal/repositories/flatsRepo"
+	"realty-avito/internal/repositories/flatsRepo/mocks"
 )
 
 func TestGetFlatsInHouseHandler(t *testing.T) {
@@ -40,7 +40,7 @@ func TestGetFlatsInHouseHandler(t *testing.T) {
 			userType: "client",
 			houseID:  "1",
 			prepareMock: func() {
-				mockFlatsRepo.On("GetApprovedFlatsByHouseID", mock.Anything, int64(1)).Return([]flat.FlatEntity{
+				mockFlatsRepo.On("GetApprovedFlatsByHouseID", mock.Anything, int64(1)).Return([]flatsRepo.FlatEntity{
 					{ID: 1, HouseID: 1, Status: "approved"},
 				}, nil)
 			},
@@ -56,7 +56,7 @@ func TestGetFlatsInHouseHandler(t *testing.T) {
 			userType: "moderator",
 			houseID:  "1",
 			prepareMock: func() {
-				mockFlatsRepo.On("GetFlatsByHouseID", mock.Anything, int64(1)).Return([]flat.FlatEntity{
+				mockFlatsRepo.On("GetFlatsByHouseID", mock.Anything, int64(1)).Return([]flatsRepo.FlatEntity{
 					{ID: 1, HouseID: 1, Status: "created"},
 					{ID: 2, HouseID: 1, Status: "approved"},
 					{ID: 3, HouseID: 1, Status: "declined"},

@@ -14,10 +14,10 @@ import (
 	"realty-avito/internal/http-server/handlers"
 	"realty-avito/internal/lib/logger/sl"
 	"realty-avito/internal/models"
-	"realty-avito/internal/repositories/house"
+	"realty-avito/internal/repositories/housesRepo"
 )
 
-func CreateHouseHandler(log *slog.Logger, housesRepo house.HousesRepository) http.HandlerFunc {
+func CreateHouseHandler(log *slog.Logger, housesRepo housesRepo.HousesRepository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.house.create"
 

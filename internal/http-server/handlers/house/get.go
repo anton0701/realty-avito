@@ -14,12 +14,12 @@ import (
 	"realty-avito/internal/http-server/handlers"
 	"realty-avito/internal/lib/logger/sl"
 	"realty-avito/internal/models"
-	"realty-avito/internal/repositories/flat"
+	"realty-avito/internal/repositories/flatsRepo"
 )
 
 type FlatsGetter interface {
-	GetFlatsByHouseID(ctx context.Context, houseID int64) ([]flat.FlatEntity, error)
-	GetApprovedFlatsByHouseID(ctx context.Context, houseID int64) ([]flat.FlatEntity, error)
+	GetFlatsByHouseID(ctx context.Context, houseID int64) ([]flatsRepo.FlatEntity, error)
+	GetApprovedFlatsByHouseID(ctx context.Context, houseID int64) ([]flatsRepo.FlatEntity, error)
 }
 
 type Request struct {
@@ -30,7 +30,7 @@ type Response struct {
 	Flats []handlers.Flat `json:"flats" validate:"required,dive"`
 }
 
-func GetFlatsInHouseHandler(log *slog.Logger, flatsRepo flat.FlatsRepository) http.HandlerFunc {
+func GetFlatsInHouseHandler(log *slog.Logger, flatsRepository flatsRepo.FlatsRepository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.house.get"
 
@@ -53,13 +53,13 @@ func GetFlatsInHouseHandler(log *slog.Logger, flatsRepo flat.FlatsRepository) ht
 			return
 		}
 
-		var flatEntities []flat.FlatEntity
+		var flatEntities []flatsRepo.FlatEntity
 		var response Response
 
 		if userType == "moderator" {
-			flatEntities, err = flatsRepo.GetFlatsByHouseID(r.Context(), houseID)
+			flatEntities, err = flatsRepository.GetFlatsByHouseID(r.Context(), houseID)
 		} else if userType == "client" {
-			flatEntities, err = flatsRepo.GetApprovedFlatsByHouseID(r.Context(), houseID)
+			flatEntities, err = flatsRepository.GetApprovedFlatsByHouseID(r.Context(), houseID)
 		} else {
 			log.Error("unauthorized access attempt",
 				slog.String("user_type", userType),

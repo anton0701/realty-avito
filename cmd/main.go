@@ -19,8 +19,8 @@ import (
 	myMiddleware "realty-avito/internal/http-server/middleware"
 	mwLogger "realty-avito/internal/http-server/middleware/logger"
 	"realty-avito/internal/lib/logger"
-	flatRepo "realty-avito/internal/repositories/flat"
-	houseRepo "realty-avito/internal/repositories/house"
+	flatRepo "realty-avito/internal/repositories/flatsRepo"
+	houseRepo "realty-avito/internal/repositories/housesRepo"
 	"realty-avito/postgres"
 )
 
@@ -64,26 +64,26 @@ func main() {
 	// GET /dummyLogin
 	router.Get("/dummyLogin", dummyLogin.New(log))
 
-	// GET /house/{id}
-	router.Route("/house/{id}", func(r chi.Router) {
+	// GET /housesRepo/{id}
+	router.Route("/housesRepo/{id}", func(r chi.Router) {
 		r.Use(myMiddleware.JWTMiddleware)
 		r.Get("/", house.GetFlatsInHouseHandler(log, flatsRepo))
 	})
 
-	// POST /house/create
-	router.Route("/house/create", func(r chi.Router) {
+	// POST /housesRepo/create
+	router.Route("/housesRepo/create", func(r chi.Router) {
 		r.Use(myMiddleware.JWTModeratorOnlyMiddleware)
 		r.Post("/", house.CreateHouseHandler(log, housesRepo))
 	})
 
-	// POST /flat/create
-	router.Route("/flat/create", func(r chi.Router) {
+	// POST /flatsRepo/create
+	router.Route("/flatsRepo/create", func(r chi.Router) {
 		r.Use(myMiddleware.JWTMiddleware)
 		r.Post("/", flat.CreateFlatHandler(log, flatsRepo, housesRepo, txManager))
 	})
 
-	// POST /flat/update
-	router.Route("/flat/update", func(r chi.Router) {
+	// POST /flatsRepo/update
+	router.Route("/flatsRepo/update", func(r chi.Router) {
 		r.Use(myMiddleware.JWTModeratorOnlyMiddleware)
 		r.Post("/", flat.UpdateFlatHandler(log, flatsRepo))
 	})

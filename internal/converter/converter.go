@@ -4,8 +4,8 @@ import (
 	"time"
 
 	handlers "realty-avito/internal/http-server/handlers"
-	flatRepo "realty-avito/internal/repositories/flat"
-	houseRepo "realty-avito/internal/repositories/house"
+	flatRepo "realty-avito/internal/repositories/flatsRepo"
+	houseRepo "realty-avito/internal/repositories/housesRepo"
 )
 
 // TODO: возвращать не только конвертированную модель, но и ошибку !!!!

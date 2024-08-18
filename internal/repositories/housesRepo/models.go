@@ -1,4 +1,4 @@
-package house
+package housesRepo
 
 import "time"
 

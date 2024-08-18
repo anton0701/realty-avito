@@ -1,4 +1,4 @@
-package flat
+package flatsRepo
 
 import (
 	"context"

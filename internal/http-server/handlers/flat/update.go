@@ -12,10 +12,10 @@ import (
 	"realty-avito/internal/converter"
 	"realty-avito/internal/http-server/handlers"
 	"realty-avito/internal/models"
-	"realty-avito/internal/repositories/flat"
+	"realty-avito/internal/repositories/flatsRepo"
 )
 
-func UpdateFlatHandler(log *slog.Logger, flatsRepository flat.FlatsRepository) http.HandlerFunc {
+func UpdateFlatHandler(log *slog.Logger, flatsRepository flatsRepo.FlatsRepository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.flat.update"
 

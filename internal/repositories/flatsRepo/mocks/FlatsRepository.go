@@ -4,7 +4,7 @@ package mocks
 
 import (
 	context "context"
-	flat "realty-avito/internal/repositories/flat"
+	flat "realty-avito/internal/repositories/flatsRepo"
 
 	mock "github.com/stretchr/testify/mock"
 )

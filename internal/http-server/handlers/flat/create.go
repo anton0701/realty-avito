@@ -16,12 +16,12 @@ import (
 	"realty-avito/internal/http-server/handlers"
 	"realty-avito/internal/lib/logger/sl"
 	"realty-avito/internal/models"
-	"realty-avito/internal/repositories/flat"
+	"realty-avito/internal/repositories/flatsRepo"
 )
 
 type FlatsWriter interface {
-	CreateFlat(ctx context.Context, flatModel flat.CreateFlatEntity) (*flat.FlatEntity, error)
-	UpdateFlat(ctx context.Context, updateFlatModel flat.UpdateFlatEntity) (*flat.FlatEntity, error)
+	CreateFlat(ctx context.Context, flatModel flatsRepo.CreateFlatEntity) (*flatsRepo.FlatEntity, error)
+	UpdateFlat(ctx context.Context, updateFlatModel flatsRepo.UpdateFlatEntity) (*flatsRepo.FlatEntity, error)
 }
 
 type HousesWriter interface {
@@ -62,7 +62,7 @@ func CreateFlatHandler(log *slog.Logger, flatsWriter FlatsWriter, housesWriter H
 
 		flatEntity := converter.ConvertCreateFlatRequestToEntity(req)
 
-		var successfullyCreatedFlatEntity *flat.FlatEntity
+		var successfullyCreatedFlatEntity *flatsRepo.FlatEntity
 
 		err = txManager.ReadCommitted(ctx, func(ctx context.Context) error {
 			var errTx error
