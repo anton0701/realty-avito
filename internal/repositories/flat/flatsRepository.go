@@ -9,6 +9,7 @@ import (
 	"realty-avito/internal/client/db"
 )
 
+//go:generate go run github.com/vektra/mockery/v2@v2.28.2 --name=FlatsRepository
 type FlatsRepository interface {
 	GetFlatsByHouseID(ctx context.Context, houseID int64) ([]FlatEntity, error)
 	GetFlatByFlatID(ctx context.Context, flatID int64) (*FlatEntity, error)

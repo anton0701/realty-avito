@@ -8,6 +8,7 @@ import (
 	"realty-avito/internal/client/db"
 )
 
+//go:generate go run github.com/vektra/mockery/v2@v2.28.2 --name=HousesRepository
 type HousesRepository interface {
 	CreateHouse(ctx context.Context, createHouseEntity CreateHouseEntity) (*HouseEntity, error)
 	UpdateHouseUpdatedAt(ctx context.Context, houseID int64) error

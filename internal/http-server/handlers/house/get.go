@@ -30,7 +30,7 @@ type Response struct {
 	Flats []handlers.Flat `json:"flats" validate:"required,dive"`
 }
 
-func New(log *slog.Logger, flatsGetter FlatsGetter) http.HandlerFunc {
+func GetFlatsInHouseHandler(log *slog.Logger, flatsRepo flat.FlatsRepository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.house.get"
 
@@ -57,9 +57,9 @@ func New(log *slog.Logger, flatsGetter FlatsGetter) http.HandlerFunc {
 		var response Response
 
 		if userType == "moderator" {
-			flatEntities, err = flatsGetter.GetFlatsByHouseID(r.Context(), houseID)
+			flatEntities, err = flatsRepo.GetFlatsByHouseID(r.Context(), houseID)
 		} else if userType == "client" {
-			flatEntities, err = flatsGetter.GetApprovedFlatsByHouseID(r.Context(), houseID)
+			flatEntities, err = flatsRepo.GetApprovedFlatsByHouseID(r.Context(), houseID)
 		} else {
 			log.Error("unauthorized access attempt",
 				slog.String("user_type", userType),

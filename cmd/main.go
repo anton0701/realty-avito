@@ -66,25 +66,25 @@ func main() {
 
 	// GET /house/{id}
 	router.Route("/house/{id}", func(r chi.Router) {
-		r.Use(myMiddleware.JWTMiddleware())
-		r.Get("/", house.New(log, flatsRepo))
+		r.Use(myMiddleware.JWTMiddleware)
+		r.Get("/", house.GetFlatsInHouseHandler(log, flatsRepo))
 	})
 
 	// POST /house/create
 	router.Route("/house/create", func(r chi.Router) {
-		r.Use(myMiddleware.JWTModeratorOnlyMiddleware())
+		r.Use(myMiddleware.JWTModeratorOnlyMiddleware)
 		r.Post("/", house.CreateHouseHandler(log, housesRepo))
 	})
 
 	// POST /flat/create
 	router.Route("/flat/create", func(r chi.Router) {
-		r.Use(myMiddleware.JWTMiddleware())
+		r.Use(myMiddleware.JWTMiddleware)
 		r.Post("/", flat.CreateFlatHandler(log, flatsRepo, housesRepo, txManager))
 	})
 
 	// POST /flat/update
 	router.Route("/flat/update", func(r chi.Router) {
-		r.Use(myMiddleware.JWTModeratorOnlyMiddleware())
+		r.Use(myMiddleware.JWTModeratorOnlyMiddleware)
 		r.Post("/", flat.UpdateFlatHandler(log, flatsRepo))
 	})
 

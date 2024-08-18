@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -29,71 +30,60 @@ func GenerateJWT(userType string) (string, error) {
 }
 
 // TODO: добавить каст к типу UserType, чтобы не получить проблем из-за опечаток
-func JWTMiddleware() func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			tokenString := r.Header.Get("Authorization")
+func JWTMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tokenString := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
 
-			if len(tokenString) > 7 { // len("Bearer ") == 7
-				tokenString = tokenString[7:]
-			}
+		if tokenString == "" {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
 
-			if tokenString == "" {
-				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-				return
-			}
-
-			claims := &Claims{}
-			token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-				return jwtKey, nil
-			})
-
-			if err != nil || !token.Valid {
-				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-				return
-			}
-
-			ctx := context.WithValue(r.Context(), "user_type", claims.UserType)
-			next.ServeHTTP(w, r.WithContext(ctx))
+		claims := &Claims{}
+		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+			return jwtKey, nil
 		})
-	}
+
+		if err != nil || !token.Valid {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), "user_type", claims.UserType)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 // TODO: добавить каст к типу UserType, чтобы не получить проблем из-за опечаток
-func JWTModeratorOnlyMiddleware() func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			tokenString := r.Header.Get("Authorization")
-			if len(tokenString) > 7 { // "Bearer " == 7
-				tokenString = tokenString[7:]
-			}
+func JWTModeratorOnlyMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tokenString := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
 
-			if tokenString == "" {
-				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-				return
-			}
+		if tokenString == "" {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
 
-			claims := &Claims{}
-			token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-				return jwtKey, nil
-			})
-
-			if err != nil || !token.Valid {
-				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-				return
-			}
-
-			if claims.UserType != "moderator" {
-				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-				return
-			}
-
-			ctx := context.WithValue(r.Context(), "user_type", claims.UserType)
-			ctx = context.WithValue(ctx, "moderator_id", tokenString)
-
-			next.ServeHTTP(w, r.WithContext(ctx))
+		claims := &Claims{}
+		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+			return jwtKey, nil
 		})
-	}
+
+		if err != nil || !token.Valid {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		if claims.UserType != "moderator" {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), "user_type", claims.UserType)
+		ctx = context.WithValue(ctx, "moderator_id", tokenString)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 func generateUUID() string {
