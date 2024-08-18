@@ -54,7 +54,6 @@ func CreateFlatHandler(log *slog.Logger, flatsWriter FlatsWriter, housesWriter H
 		log.Info("request body decoded", slog.Any("request", req))
 
 		if err := validator.New().Struct(req); err != nil {
-			//validateErr := err.(validator.ValidationErrors)
 			log.Error("failed to decode request body", sl.Err(err))
 			http.Error(w, "failed to decode request body", http.StatusBadRequest)
 			return

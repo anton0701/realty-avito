@@ -50,7 +50,7 @@ func main() {
 	// init transaction manager
 	txManager := transaction.NewTransactionManager(pgClient.DB())
 
-	// TODO: создать flatsRepo + housesRepo + возможно moderatedFlatsRepo
+	// init repo
 	flatsRepo := flatRepo.NewFlatsRepository(pgClient)
 	housesRepo := houseRepo.NewHousesRepository(pgClient)
 

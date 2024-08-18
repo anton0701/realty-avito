@@ -16,7 +16,6 @@ type DummyLoginResponse struct {
 }
 
 func New(log *slog.Logger) http.HandlerFunc {
-	// TODO: вынести строки в константы
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.dummyLogin.dummyLogin"
 
@@ -26,7 +25,7 @@ func New(log *slog.Logger) http.HandlerFunc {
 		)
 
 		userType := r.URL.Query().Get("user_type")
-		// TODO: сделать через попытку кастануть к UserType (если не получается, то error)
+
 		if userType != "client" && userType != "moderator" {
 			log.Info("invalid user_type:", slog.StringValue(userType))
 			w.WriteHeader(http.StatusBadRequest)
