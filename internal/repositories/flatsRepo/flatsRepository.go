@@ -9,6 +9,19 @@ import (
 	"realty-avito/internal/client/db"
 )
 
+const (
+	tableName = "flats"
+
+	idColumn          = "id"
+	houseIDColumn     = "house_id"
+	priceColumn       = "price"
+	roomsColumn       = "rooms"
+	statusColumn      = "status"
+	moderatorIDColumn = "moderator_id"
+	createdAtColumn   = "created_at"
+	updatedAtColumn   = "updated_at"
+)
+
 //go:generate go run github.com/vektra/mockery/v2@v2.28.2 --name=FlatsRepository
 type FlatsRepository interface {
 	GetFlatsByHouseID(ctx context.Context, houseID int64) ([]FlatEntity, error)
@@ -28,9 +41,9 @@ func NewFlatsRepository(db db.Client) FlatsRepository {
 
 func (r *flatsRepository) GetFlatsByHouseID(ctx context.Context, houseID int64) ([]FlatEntity, error) {
 	selectBuilder := squirrel.
-		Select("id", "house_id", "price", "rooms", "status").
-		From("flats").
-		Where(squirrel.Eq{"house_id": houseID}).
+		Select(idColumn, houseIDColumn, priceColumn, roomsColumn, statusColumn).
+		From(tableName).
+		Where(squirrel.Eq{houseIDColumn: houseID}).
 		PlaceholderFormat(squirrel.Dollar)
 
 	query, args, err := selectBuilder.ToSql()
@@ -67,9 +80,9 @@ func (r *flatsRepository) GetFlatsByHouseID(ctx context.Context, houseID int64) 
 
 func (r *flatsRepository) GetFlatByFlatID(ctx context.Context, flatID int64) (*FlatEntity, error) {
 	selectBuilder := squirrel.
-		Select("id", "house_id", "price", "rooms", "status", "moderator_id").
-		From("flats").
-		Where(squirrel.Eq{"id": flatID}).
+		Select(idColumn, houseIDColumn, priceColumn, roomsColumn, statusColumn, moderatorIDColumn).
+		From(tableName).
+		Where(squirrel.Eq{idColumn: flatID}).
 		PlaceholderFormat(squirrel.Dollar)
 
 	query, args, err := selectBuilder.ToSql()
@@ -96,12 +109,12 @@ func (r *flatsRepository) GetFlatByFlatID(ctx context.Context, flatID int64) (*F
 
 func (r *flatsRepository) GetApprovedFlatsByHouseID(ctx context.Context, houseID int64) ([]FlatEntity, error) {
 	selectBuilder := squirrel.
-		Select("id", "house_id", "price", "rooms", "status").
-		From("flats").
+		Select(idColumn, houseIDColumn, priceColumn, roomsColumn, statusColumn).
+		From(tableName).
 		Where(
 			squirrel.Eq{
-				"house_id": houseID,
-				"status":   StatusApproved,
+				houseIDColumn: houseID,
+				statusColumn:  StatusApproved,
 			}).
 		PlaceholderFormat(squirrel.Dollar)
 
@@ -137,9 +150,9 @@ func (r *flatsRepository) CreateFlat(ctx context.Context, flatEntity CreateFlatE
 	log.Printf("flatsRepository CreateFlat context: %v", ctx)
 
 	insertBuilder := squirrel.
-		Insert("flats").
+		Insert(tableName).
 		PlaceholderFormat(squirrel.Dollar).
-		Columns("house_id", "price", "rooms", "status").
+		Columns(houseIDColumn, priceColumn, roomsColumn, statusColumn).
 		Values(flatEntity.HouseID, flatEntity.Price, flatEntity.Rooms, StatusCreated).
 		Suffix("RETURNING id")
 
@@ -175,11 +188,11 @@ func (r *flatsRepository) CreateFlat(ctx context.Context, flatEntity CreateFlatE
 
 func (r *flatsRepository) UpdateFlat(ctx context.Context, updateFlatEntity UpdateFlatEntity) (*FlatEntity, error) {
 	updateBuilder := squirrel.
-		Update("flats").
-		Set("status", updateFlatEntity.Status).
-		Set("moderator_id", updateFlatEntity.ModeratorID).
-		Set("updated_at", updateFlatEntity.UpdatedAt).
-		Where(squirrel.Eq{"id": updateFlatEntity.ID}).
+		Update(tableName).
+		Set(statusColumn, updateFlatEntity.Status).
+		Set(moderatorIDColumn, updateFlatEntity.ModeratorID).
+		Set(updatedAtColumn, updateFlatEntity.UpdatedAt).
+		Where(squirrel.Eq{idColumn: updateFlatEntity.ID}).
 		Suffix("RETURNING id, house_id, price, rooms, status, moderator_id").
 		PlaceholderFormat(squirrel.Dollar)
 

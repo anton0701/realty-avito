@@ -8,10 +8,6 @@ import (
 	houseRepo "realty-avito/internal/repositories/housesRepo"
 )
 
-// TODO: возвращать не только конвертированную модель, но и ошибку !!!!
-// TODO: возвращать ошибку, если не получилось конвертировать status !!!!
-// TODO: в сервисе проверять ошибку на нил - возвращать 500 ошибку, если пришел эррор!!!
-
 func ConvertCreateFlatRequestToEntity(req handlers.CreateFlatRequest) flatRepo.CreateFlatEntity {
 	return flatRepo.CreateFlatEntity{
 		HouseID: req.HouseID,

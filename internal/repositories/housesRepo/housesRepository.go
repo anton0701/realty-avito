@@ -8,6 +8,16 @@ import (
 	"realty-avito/internal/client/db"
 )
 
+const (
+	tableName = "houses"
+
+	idColumn        = "id"
+	addressColumn   = "address"
+	yearColumn      = "year"
+	developerColumn = "developer"
+	updatedAtColumn = "updated_at"
+)
+
 //go:generate go run github.com/vektra/mockery/v2@v2.28.2 --name=HousesRepository
 type HousesRepository interface {
 	CreateHouse(ctx context.Context, createHouseEntity CreateHouseEntity) (*HouseEntity, error)
@@ -24,9 +34,9 @@ func NewHousesRepository(db db.Client) HousesRepository {
 
 func (r *housesRepository) CreateHouse(ctx context.Context, createHouseEntity CreateHouseEntity) (*HouseEntity, error) {
 	insertBuilder := squirrel.
-		Insert("houses").
+		Insert(tableName).
 		PlaceholderFormat(squirrel.Dollar).
-		Columns("address", "year", "developer").
+		Columns(addressColumn, yearColumn, developerColumn).
 		Values(createHouseEntity.Address, createHouseEntity.Year, createHouseEntity.Developer).
 		Suffix("RETURNING id, created_at, address, year, developer")
 
@@ -54,9 +64,9 @@ func (r *housesRepository) CreateHouse(ctx context.Context, createHouseEntity Cr
 
 func (r *housesRepository) UpdateHouseUpdatedAt(ctx context.Context, houseID int64) error {
 	updateBuilder := squirrel.
-		Update("houses").
-		Set("updated_at", squirrel.Expr("CURRENT_TIMESTAMP")).
-		Where(squirrel.Eq{"id": houseID}).
+		Update(tableName).
+		Set(updatedAtColumn, squirrel.Expr("CURRENT_TIMESTAMP")).
+		Where(squirrel.Eq{idColumn: houseID}).
 		PlaceholderFormat(squirrel.Dollar)
 
 	query, args, err := updateBuilder.ToSql()
