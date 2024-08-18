@@ -2,7 +2,7 @@ package flatsRepo
 
 import (
 	"context"
-	"log"
+	"realty-avito/internal/errors"
 
 	"github.com/Masterminds/squirrel"
 
@@ -147,8 +147,6 @@ func (r *flatsRepository) GetApprovedFlatsByHouseID(ctx context.Context, houseID
 }
 
 func (r *flatsRepository) CreateFlat(ctx context.Context, flatEntity CreateFlatEntity) (*FlatEntity, error) {
-	log.Printf("flatsRepository CreateFlat context: %v", ctx)
-
 	insertBuilder := squirrel.
 		Insert(tableName).
 		PlaceholderFormat(squirrel.Dollar).
@@ -172,6 +170,10 @@ func (r *flatsRepository) CreateFlat(ctx context.Context, flatEntity CreateFlatE
 		QueryRowContext(ctx, q, args...).
 		Scan(&flatID)
 	if err != nil {
+		if repo_errors.IsForeignKeyViolation(err) {
+			return nil, &repo_errors.ErrHouseNotFound{HouseID: flatEntity.HouseID}
+		}
+
 		return nil, err
 	}
 

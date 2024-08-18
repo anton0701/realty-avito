@@ -12,7 +12,6 @@ import (
 
 	"realty-avito/internal/converter"
 	"realty-avito/internal/http-server/handlers"
-	"realty-avito/internal/lib/logger/sl"
 	"realty-avito/internal/models"
 	"realty-avito/internal/repositories/housesRepo"
 )
@@ -30,15 +29,6 @@ func CreateHouseHandler(log *slog.Logger, housesRepo housesRepo.HousesRepository
 				slog.String("request_id", middleware.GetReqID(r.Context())),
 			)
 			http.Error(w, "request body is empty", http.StatusBadRequest)
-			return
-		}
-
-		if err != nil {
-			log.Error("failed to decode request body",
-				slog.String("op", op),
-				sl.Err(err),
-			)
-			http.Error(w, "failed to decode request body", http.StatusBadRequest)
 			return
 		}
 

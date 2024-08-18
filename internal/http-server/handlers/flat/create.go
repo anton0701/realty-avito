@@ -3,6 +3,7 @@ package flat
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -13,6 +14,7 @@ import (
 
 	"realty-avito/internal/client/db"
 	"realty-avito/internal/converter"
+	repo_errors "realty-avito/internal/errors"
 	"realty-avito/internal/http-server/handlers"
 	"realty-avito/internal/lib/logger/sl"
 	"realty-avito/internal/models"
@@ -54,8 +56,8 @@ func CreateFlatHandler(log *slog.Logger, flatsWriter FlatsWriter, housesWriter H
 		log.Info("request body decoded", slog.Any("request", req))
 
 		if err := validator.New().Struct(req); err != nil {
-			log.Error("failed to decode request body", sl.Err(err))
-			http.Error(w, "failed to decode request body", http.StatusBadRequest)
+			log.Error("failed to validate request body", sl.Err(err))
+			http.Error(w, "failed to validate request body", http.StatusBadRequest)
 			return
 		}
 
@@ -82,6 +84,13 @@ func CreateFlatHandler(log *slog.Logger, flatsWriter FlatsWriter, housesWriter H
 
 		if err != nil {
 			log.Error("failed to create flat", slog.String("op", op), sl.Err(err))
+
+			var houseNotFoundErr *repo_errors.ErrHouseNotFound
+			if errors.As(err, &houseNotFoundErr) {
+				errorDescription := fmt.Sprintf("Cannot create flat: %s", houseNotFoundErr.Error())
+				http.Error(w, errorDescription, http.StatusBadRequest)
+				return
+			}
 
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Header().Set("Retry-After", "60")
