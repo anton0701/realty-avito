@@ -68,3 +68,30 @@ type CreateHouseResponse struct {
 	Developer *string `json:"developer,omitempty"`
 	CreatedAt string  `json:"created_at"`
 }
+
+type User struct {
+	ID        int64     `json:"id"`
+	Email     string    `json:"email"`
+	Password  string    `json:"password"`
+	UserType  string    `json:"user_type" validate:"required,oneof=client moderator"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type RegisterRequest struct {
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=6"`
+	UserType string `json:"user_type" validate:"required,oneof=client moderator"`
+}
+
+type LoginRequest struct {
+	ID       string `json:"id" validate:"required,uuid"`
+	Password string `json:"password" validate:"required,min=6"`
+}
+
+type RegisterResponse struct {
+	UserID string `json:"user_id" validate:"required,uuid"`
+}
+
+type LoginResponse struct {
+	Token string `json:"token"`
+}

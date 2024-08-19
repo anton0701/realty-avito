@@ -32,7 +32,7 @@ func New(log *slog.Logger) http.HandlerFunc {
 			return
 		}
 
-		token, err := myMiddleware.GenerateJWT(userType)
+		token, err := myMiddleware.GenerateDummyJWT(userType)
 		if err != nil {
 			log.Error("failed to create dummy token", slog.String("op", op), slog.StringValue(err.Error()))
 

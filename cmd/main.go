@@ -16,11 +16,14 @@ import (
 	"realty-avito/internal/http-server/handlers/dummyLogin"
 	"realty-avito/internal/http-server/handlers/flat"
 	"realty-avito/internal/http-server/handlers/house"
+	"realty-avito/internal/http-server/handlers/login"
+	"realty-avito/internal/http-server/handlers/register"
 	myMiddleware "realty-avito/internal/http-server/middleware"
 	mwLogger "realty-avito/internal/http-server/middleware/logger"
 	"realty-avito/internal/lib/logger"
 	flatRepo "realty-avito/internal/repositories/flatsRepo"
 	houseRepo "realty-avito/internal/repositories/housesRepo"
+	"realty-avito/internal/repositories/usersRepo"
 	"realty-avito/postgres"
 )
 
@@ -53,6 +56,7 @@ func main() {
 	// init repo
 	flatsRepo := flatRepo.NewFlatsRepository(pgClient)
 	housesRepo := houseRepo.NewHousesRepository(pgClient)
+	usersRepository := usersRepo.NewUserRepository(pgClient)
 
 	// init router
 	router := chi.NewRouter()
@@ -87,6 +91,12 @@ func main() {
 		r.Use(myMiddleware.JWTModeratorOnlyMiddleware)
 		r.Post("/", flat.UpdateFlatHandler(log, flatsRepo))
 	})
+
+	// POST /register
+	router.Post("/register", register.RegisterHandler(log, usersRepository))
+
+	// POST /login
+	router.Post("/login", login.LoginHandler(log, usersRepository))
 
 	// Run server
 	srv := &http.Server{

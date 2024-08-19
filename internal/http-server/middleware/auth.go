@@ -10,17 +10,15 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// TODO: вынести строки в константы
-// TODO: подумать над UserType
 var jwtKey = []byte("jwt_most_secret_key")
 
-type Claims struct {
+type DummyClaims struct {
 	UserType string `json:"user_type"`
 	jwt.RegisteredClaims
 }
 
-func GenerateJWT(userType string) (string, error) {
-	claims := &Claims{
+func GenerateDummyJWT(userType string) (string, error) {
+	claims := &DummyClaims{
 		UserType:         userType,
 		RegisteredClaims: jwt.RegisteredClaims{ID: generateUUID()},
 	}
@@ -29,7 +27,6 @@ func GenerateJWT(userType string) (string, error) {
 	return token.SignedString(jwtKey)
 }
 
-// TODO: добавить каст к типу UserType, чтобы не получить проблем из-за опечаток
 func JWTMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tokenString := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
@@ -39,7 +36,7 @@ func JWTMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		claims := &Claims{}
+		claims := &DummyClaims{}
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 			return jwtKey, nil
 		})
@@ -54,7 +51,6 @@ func JWTMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// TODO: добавить каст к типу UserType, чтобы не получить проблем из-за опечаток
 func JWTModeratorOnlyMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tokenString := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
@@ -64,7 +60,7 @@ func JWTModeratorOnlyMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		claims := &Claims{}
+		claims := &DummyClaims{}
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 			return jwtKey, nil
 		})

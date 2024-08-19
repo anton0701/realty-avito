@@ -3,15 +3,14 @@ package pg
 import (
 	"context"
 	"fmt"
-	"log"
-
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"log"
+	"realty-avito/internal/client/db/prettier"
 
 	"realty-avito/internal/client/db"
-	"realty-avito/internal/client/db/prettier"
 )
 
 type key string
